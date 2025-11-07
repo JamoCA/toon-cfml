@@ -92,7 +92,7 @@ result = toon.encode(data);
 result = toon.encode(data, {delimiter: chr(9)});
 
 // With length marker (#)
-result = toon.encode(data, {lengthMarker: "#"});
+result = toon.encode(data, {lengthMarker: "##"});
 
 // 4-space indentation
 result = toon.encode(data, {indent: 4});
@@ -259,25 +259,25 @@ B2|1|14.5
 TOON only quotes strings when necessary to maximize token efficiency:
 
 ```coldfusion
-{
+[  // using an ordered struct
     unquoted: "hello world",           // hello world (no quotes needed)
     withComma: "hello, world",         // "hello, world" (contains delimiter)
     withColon: "key: value",           // "key: value" (contains colon)
     withSpaces: "  padded  ",          // "  padded  " (leading/trailing spaces)
-    numericString: "123",              // "123" (looks like number, must quote)
-    versionString: "1.0",              // "1.0" (looks like number, must quote)
-    boolString: "true",                // "true" (looks like boolean, must quote)
-    yesString: "yes",                  // "yes" (CF treats as boolean, must quote)
-    noString: "NO",                    // "NO" (CF treats as boolean, must quote)
+    numericString: toString("123"),    // "123" (looks like number, must quote or use toString/javascast("string"))
+    versionString: toString("1.0"),    // "1.0" (looks like number, must quote or use toString/javascast("string"))
+    boolString: toString("true"),      // "true" (looks like boolean, must quote or use toString/javascast("string"))
+    yesString: toString("yes"),        // "yes" (CF treats as boolean, must quote or use toString/javascast("string"))
+    noString: toString("NO"),          // "NO" (CF treats as boolean, must quote or use toString/javascast("string"))
     emoji: "Hello 👋 World",           // Hello 👋 World (Unicode safe)
-}
+]
 ```
 
 **Quoted when:**
 - Empty string
 - Leading or trailing spaces
 - Contains delimiter, colon, quote, backslash, or control chars
-- **Looks like a number** (e.g., `"123"`, `"1.0"`, `"3.14"`) - always quoted to preserve string type
+- **Looks like a number** (e.g., `"123"`, `"1.0"`, `"3.14"`) - always quoted or use toString/javascast("string") to preserve string type
 - Looks like boolean/null (e.g., `"true"`, `"false"`, `"yes"`, `"no"`, `"YES"`, `"NO"`, `"null"`)
 - Starts with `"- "` (list-like)
 - Looks like structural token (`[5]`, `{key}`)
@@ -292,7 +292,7 @@ TOON only quotes strings when necessary to maximize token efficiency:
 Add `#` prefix to array lengths to emphasize count vs. index:
 
 ```coldfusion
-result = toon.encode(data, {lengthMarker: "#"});
+result = toon.encode(data, {lengthMarker: "##"});
 ```
 
 ```
@@ -403,7 +403,7 @@ TOON preserves data types with high fidelity using Java class metadata:
 - **Date Strings:** Treated as strings with no automatic formatting or timezone conversion. Use ISO 8601 format for dates (e.g., `"2025-01-15T10:30:00Z"`).
 - **Empty containers:** `[]` → `[0]:`, `{}` → empty output
 
-**Important:** 
+**Important:**
 - ColdFusion's type system is extremely permissive (`isBoolean("1")` returns true, `isNumeric("true")` can return true in some contexts)
 - The component uses Java class introspection via `getMetadata()` for reliable type detection
 - When creating test data or working with the component, use `javacast()` to ensure values have the intended type
