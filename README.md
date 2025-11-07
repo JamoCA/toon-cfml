@@ -12,6 +12,9 @@ TOON is a data format that achieves **30-60% fewer tokens** than JSON by:
 
 **Perfect for:** Uniform arrays of objects (tabular data), LLM prompts, API payloads where token efficiency matters.
 
+Official information can be found at:
+https://github.com/toon-format/toon
+
 ## Installation
 
 Simply copy `Toon.cfc` to your ColdFusion application and instantiate it:
