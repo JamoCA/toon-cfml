@@ -12,7 +12,7 @@ test1 = [retries: 3, timeout: 30];
 enc1 = toon.encode(test1);
 dec1 = toon.decode(enc1);
 writeOutput("<pre>Original: " & serializeJSON(test1) & "</pre>");
-writeOutput("<pre>Encoded: " & htmlEditFormat(enc1) & "</pre>");
+writeOutput("<pre>Encoded: " & encodeforhtml(enc1) & "</pre>");
 writeOutput("<pre>Decoded: " & serializeJSON(dec1) & "</pre>");
 writeOutput("<p>Match: " & (serializeJSON(test1) == serializeJSON(dec1) ? "✅" : "❌") & "</p>");
 
@@ -21,7 +21,7 @@ test2 = {version: "1.0"};
 enc2 = toon.encode(test2);
 dec2 = toon.decode(enc2);
 writeOutput("<pre>Original: " & serializeJSON(test2) & "</pre>");
-writeOutput("<pre>Encoded: " & htmlEditFormat(enc2) & "</pre>");
+writeOutput("<pre>Encoded: " & encodeforhtml(enc2) & "</pre>");
 writeOutput("<pre>Decoded: " & serializeJSON(dec2) & "</pre>");
 writeOutput("<p>Match: " & (serializeJSON(test2) == serializeJSON(dec2) ? "✅" : "❌") & "</p>");
 
@@ -30,7 +30,7 @@ test3 = {endpoints: ["api1.com", "api2.com"]};
 enc3 = toon.encode(test3);
 dec3 = toon.decode(enc3);
 writeOutput("<pre>Original: " & serializeJSON(test3) & "</pre>");
-writeOutput("<pre>Encoded: " & htmlEditFormat(enc3) & "</pre>");
+writeOutput("<pre>Encoded: " & encodeforhtml(enc3) & "</pre>");
 writeOutput("<pre>Decoded: " & serializeJSON(dec3) & "</pre>");
 writeOutput("<p>Match: " & (serializeJSON(test3) == serializeJSON(dec3) ? "✅" : "❌") & "</p>");
 writeOutput("<p>Decoded type: " & (isArray(dec3.endpoints) ? "Array ✅" : "NOT Array ❌") & "</p>");
@@ -40,7 +40,7 @@ test4 = {created: "2025-01-15T10:30:00Z"};
 enc4 = toon.encode(test4);
 dec4 = toon.decode(enc4);
 writeOutput("<pre>Original: " & serializeJSON(test4) & "</pre>");
-writeOutput("<pre>Encoded: " & htmlEditFormat(enc4) & "</pre>");
+writeOutput("<pre>Encoded: " & encodeforhtml(enc4) & "</pre>");
 writeOutput("<pre>Decoded: " & serializeJSON(dec4) & "</pre>");
 writeOutput("<p>Match: " & (serializeJSON(test4) == serializeJSON(dec4) ? "✅" : "❌") & "</p>");
 
@@ -54,7 +54,7 @@ test5 = [
 enc5 = toon.encode(test5);
 dec5 = toon.decode(enc5);
 writeOutput("<pre>Original: " & serializeJSON(test5) & "</pre>");
-writeOutput("<pre>Encoded:</pre><pre>" & htmlEditFormat(enc5) & "</pre>");
+writeOutput("<pre>Encoded:</pre><pre>" & encodeforhtml(enc5) & "</pre>");
 writeOutput("<pre>Decoded: " & serializeJSON(dec5) & "</pre>");
 writeOutput("<p>Match: " & (serializeJSON(test5) == serializeJSON(dec5) ? "✅" : "❌") & "</p>");
 
@@ -75,8 +75,8 @@ complexData = [
         version: "1.0"
 	],
     records: [
-        {active: true, id: 1, tags: ["a", "b", "c"], value: 100},
-        {active: false, id: 2, tags: ["x", "y"], value: 200}
+        [active: true, id: 1, tags: ["a", "b", "c"], value: 100],
+        [active: false, id: 2, tags: ["x", "y"], value: 200]
     ],
     config: [
         endpoints: ["api1.com", "api2.com"],
@@ -88,7 +88,7 @@ complexData = [
 try {
     encoded = toon.encode(complexData);
     writeOutput("<h3>Encoded:</h3>");
-    writeOutput("<pre>" & htmlEditFormat(encoded) & "</pre>");
+    writeOutput("<pre>" & encodeforhtml(encoded) & "</pre>");
 
     decoded = toon.decode(encoded);
     writeOutput("<h3>Decoded:</h3>");
@@ -96,7 +96,7 @@ try {
 
     reEncoded = toon.encode(decoded);
     writeOutput("<h3>Re-encoded:</h3>");
-    writeOutput("<pre>" & htmlEditFormat(reEncoded) & "</pre>");
+    writeOutput("<pre>" & encodeforhtml(reEncoded) & "</pre>");
 
     if (encoded == reEncoded) {
         writeOutput("<h2 style='color: green;'>✅ PASS: Round-trip successful!</h2>");
@@ -116,8 +116,8 @@ try {
             style = line1 != line2 ? " style='background-color: ##ffeeee;'" : "";
             writeOutput("<tr" & style & ">");
             writeOutput("<td>" & i & "</td>");
-            writeOutput("<td>" & htmlEditFormat(line1) & "</td>");
-            writeOutput("<td>" & htmlEditFormat(line2) & "</td>");
+            writeOutput("<td>" & encodeforhtml(line1) & "</td>");
+            writeOutput("<td>" & encodeforhtml(line2) & "</td>");
             writeOutput("</tr>");
         }
         writeOutput("</table>");

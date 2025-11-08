@@ -35,8 +35,8 @@ function detailedTest(label, originalValue, shouldBeQuoted) {
         }
         writeOutput("<tr>");
         writeOutput("<td><strong>Original</strong></td>");
-        writeOutput("<td><code>" & htmlEditFormat(toString(originalValue)) & "</code></td>");
-        writeOutput("<td>Type: " & origType & "<br>Class: <code>" & htmlEditFormat(origClass) & "</code><br>JSON: " & htmlEditFormat(originalJSON) & "</td>");
+        writeOutput("<td><code>" & encodeforhtml(toString(originalValue)) & "</code></td>");
+        writeOutput("<td>Type: " & origType & "<br>Class: <code>" & encodeforhtml(origClass) & "</code><br>JSON: " & encodeforhtml(originalJSON) & "</td>");
         writeOutput("</tr>");
 
         // Encode
@@ -44,7 +44,7 @@ function detailedTest(label, originalValue, shouldBeQuoted) {
         isQuoted = (find("""", encoded) > 0);
         writeOutput("<tr>");
         writeOutput("<td><strong>TOON Encoded</strong></td>");
-        writeOutput("<td><pre>" & htmlEditFormat(encoded) & "</pre></td>");
+        writeOutput("<td><pre>" & encodeforhtml(encoded) & "</pre></td>");
         writeOutput("<td>Quoted in TOON: " & (isQuoted ? "YES ✓" : "NO") & "<br>Expected: " & (shouldBeQuoted ? "YES" : "NO") & "</td>");
         writeOutput("</tr>");
 
@@ -71,15 +71,15 @@ function detailedTest(label, originalValue, shouldBeQuoted) {
 
         writeOutput("<tr>");
         writeOutput("<td><strong>Decoded</strong></td>");
-        writeOutput("<td><code>" & htmlEditFormat(toString(decodedValue)) & "</code></td>");
-        writeOutput("<td>Type: " & decodedType & "<br>Class: <code>" & htmlEditFormat(decodedClass) & "</code><br>JSON: " & htmlEditFormat(decodedJSON) & "</td>");
+        writeOutput("<td><code>" & encodeforhtml(toString(decodedValue)) & "</code></td>");
+        writeOutput("<td>Type: " & decodedType & "<br>Class: <code>" & encodeforhtml(decodedClass) & "</code><br>JSON: " & encodeforhtml(decodedJSON) & "</td>");
         writeOutput("</tr>");
 
         // Re-encode
         reEncoded = toon.encode(decoded);
         writeOutput("<tr>");
         writeOutput("<td><strong>Re-encoded</strong></td>");
-        writeOutput("<td><pre>" & htmlEditFormat(reEncoded) & "</pre></td>");
+        writeOutput("<td><pre>" & encodeforhtml(reEncoded) & "</pre></td>");
         writeOutput("<td>&nbsp;</td>");
         writeOutput("</tr>");
 

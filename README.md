@@ -2,6 +2,8 @@
 
 A ColdFusion 2016+ implementation of **TOON (Token-Oriented Object Notation)** - a compact, human-readable serialization format designed for passing structured data to Large Language Models with significantly reduced token usage.
 
+https://github.com/JamoCA/toon-cfml
+
 ## What is TOON?
 
 TOON is a data format that achieves **30-60% fewer tokens** than JSON by:
@@ -11,9 +13,6 @@ TOON is a data format that achieves **30-60% fewer tokens** than JSON by:
 - Providing explicit structure that helps LLMs parse and validate data
 
 **Perfect for:** Uniform arrays of objects (tabular data), LLM prompts, API payloads where token efficiency matters.
-
-Official information can be found at:
-https://github.com/toon-format/toon
 
 ## Installation
 
@@ -75,16 +74,27 @@ data = toon.decode(toonString);
 
 ### encode(value, options)
 
-Converts ColdFusion data (structs, arrays, primitives) to TOON format.
+Converts ColdFusion data (structs, arrays, primitives) **or JSON strings** to TOON format.
 
 **Parameters:**
-- `value` (required) - Any ColdFusion value to encode
+- `value` (required) - Any ColdFusion value to encode **OR a JSON string**
 - `options` (optional) - Struct with encoding options:
   - `indent` (number) - Spaces per indentation level (default: 2)
   - `delimiter` (string) - Array delimiter: `,` (comma), `\t` (tab), or `|` (pipe) (default: `,`)
   - `lengthMarker` (string or boolean) - Prefix for array lengths: `"#"` to enable, `false` to disable (default: false)
 
 **Returns:** String containing TOON-formatted data
+
+**JSON String Support:** If you pass a valid JSON string, it will be automatically deserialized and then encoded to TOON:
+
+```coldfusion
+// From CF data
+result = toon.encode({name: "Alice", age: 30});
+
+// From JSON string (automatically detected and parsed)
+jsonString = '{"name":"Alice","age":30}';
+result = toon.encode(jsonString);  // Same result as above!
+```
 
 **Example:**
 ```coldfusion
@@ -95,7 +105,7 @@ result = toon.encode(data);
 result = toon.encode(data, {delimiter: chr(9)});
 
 // With length marker (#)
-result = toon.encode(data, {lengthMarker: "##"});
+result = toon.encode(data, {lengthMarker: "#"});
 
 // 4-space indentation
 result = toon.encode(data, {indent: 4});
@@ -262,31 +272,32 @@ B2|1|14.5
 TOON only quotes strings when necessary to maximize token efficiency:
 
 ```coldfusion
-[  // using an ordered struct
+{
     unquoted: "hello world",           // hello world (no quotes needed)
     withComma: "hello, world",         // "hello, world" (contains delimiter)
     withColon: "key: value",           // "key: value" (contains colon)
     withSpaces: "  padded  ",          // "  padded  " (leading/trailing spaces)
-    numericString: toString("123"),    // "123" (looks like number, must quote or use toString/javascast("string"))
-    versionString: toString("1.0"),    // "1.0" (looks like number, must quote or use toString/javascast("string"))
-    boolString: toString("true"),      // "true" (looks like boolean, must quote or use toString/javascast("string"))
-    yesString: toString("yes"),        // "yes" (CF treats as boolean, must quote or use toString/javascast("string"))
-    noString: toString("NO"),          // "NO" (CF treats as boolean, must quote or use toString/javascast("string"))
+    numericString: "123",              // "123" (looks like number, must quote)
+    versionString: "1.0",              // "1.0" (looks like number, must quote)
+    boolString: "true",                // "true" (looks like boolean, must quote)
+    yesString: "yes",                  // "yes" (CF treats as boolean, must quote)
+    noString: "NO",                    // "NO" (CF treats as boolean, must quote)
     emoji: "Hello 👋 World",           // Hello 👋 World (Unicode safe)
-]
+}
 ```
 
 **Quoted when:**
 - Empty string
 - Leading or trailing spaces
 - Contains delimiter, colon, quote, backslash, or control chars
-- **Looks like a number** (e.g., `"123"`, `"1.0"`, `"3.14"`) - always quoted or use toString/javascast("string") to preserve string type
+- **Looks like a number** (e.g., `"123"`, `"1.0"`, `"3.14"`) - always quoted to preserve string type
 - Looks like boolean/null (e.g., `"true"`, `"false"`, `"yes"`, `"no"`, `"YES"`, `"NO"`, `"null"`)
 - Starts with `"- "` (list-like)
 - Looks like structural token (`[5]`, `{key}`)
 
 **Unquoted:**
 - Regular text with inner spaces (e.g., `hello world`)
+- value is explicitly case to a numeric or boolean data type
 - Unicode and emoji safe
 - Most natural text that doesn't match above rules
 
@@ -342,11 +353,23 @@ Set [N] to match the row count.
 - Multiple delimiter options
 - Length markers
 
+✅ **JSON String Input (NEW)**
+- Accepts JSON strings directly - automatic parsing
+- No need to manually deserialize before encoding
+- Convenient for API responses, files, database JSON fields
+
+✅ **Large Number Support (NEW)**
+- Long (int64) for numbers up to 9,223,372,036,854,775,807
+- BigInteger for arbitrarily large integers
+- Perfect for timestamps, large IDs, financial data
+- Automatic type detection and preservation
+
 ✅ **ColdFusion Integration**
 - Native struct/array handling
-- Date serialization (ISO 8601)
+- Java class metadata for reliable type detection
 - Null value support
 - Round-trip encoding/decoding
+- Date strings preserved (no timezone conversion)
 
 ✅ **Encoding Options**
 - Custom indentation (2-space, 4-space, etc.)
@@ -398,6 +421,8 @@ TOON preserves data types with high fidelity using Java class metadata:
 **Type Detection:** The component uses `getMetadata()` to check the actual underlying Java class of values, ensuring reliable type detection despite ColdFusion's permissive type system.
 
 - **Integers:** Encoded without decimal point (e.g., `3`, `100`). Decoded as integer type using `javacast("int", ...)`.
+- **Large Integers (Long):** Numbers exceeding 2,147,483,647 (int32 max) are handled as Java Long (int64), supporting values up to 9,223,372,036,854,775,807. Use `createObject("java", "java.lang.Long").valueOf("large_number")` for explicit long values.
+- **Very Large Integers (BigInteger):** Numbers exceeding Long range are handled as Java BigInteger, supporting arbitrarily large integers.
 - **Decimals:** Encoded with decimal point (e.g., `3.14`, `99.99`). Decoded as double type using `javacast("double", ...)`.
 - **Booleans:** Encoded as literal `true` or `false`. Decoded as boolean type using `javacast("boolean", ...)`.
 - **Null:** Encoded as `null`. Decoded as `javacast("null", "")`.
@@ -456,7 +481,7 @@ See `ToonExamples.cfm` for comprehensive examples including:
 
 ## Requirements
 
-- ColdFusion 2016 or higher
+- Adobe ColdFusion 2016 or higher; also tested on Lucee 5, 6 & 7.
 - Support for cfscript syntax
 - Java cast for null values
 
@@ -499,3 +524,54 @@ Issues and improvements welcome! This is an independent ColdFusion implementatio
 ---
 
 **Note:** TOON is designed for LLM input where human readability and token efficiency matter. It's not a drop-in replacement for JSON in APIs or storage, but rather a specialized format for contexts where token count impacts cost or performance.
+
+## Working with Large Numbers
+
+ColdFusion's `int()` function is limited to 32-bit integers (max: 2,147,483,647). For larger numbers, use Java Long or BigInteger:
+
+### Large Numbers (Long)
+
+```coldfusion
+// For numbers beyond int32 range but within int64 range
+var userId = createObject("java", "java.lang.Long").valueOf("9876543210123");
+var timestamp = createObject("java", "java.lang.Long").valueOf("1704067200000");
+
+data = {
+    userId: userId,
+    timestamp: timestamp
+};
+
+encoded = toon.encode(data);
+// userId: 9876543210123
+// timestamp: 1704067200000
+
+decoded = toon.decode(encoded);
+// Values preserved as Long objects
+```
+
+### Very Large Numbers (BigInteger)
+
+```coldfusion
+// For numbers beyond int64 range
+var hugeNumber = createObject("java", "java.math.BigInteger").init("12345678901234567890123456789");
+
+data = {largeValue: hugeNumber};
+encoded = toon.encode(data);
+decoded = toon.decode(encoded);
+// Value preserved as BigInteger
+```
+
+### Automatic Detection
+
+The encoder automatically detects large numbers:
+
+```coldfusion
+data = {
+    small: 100,                    // Regular int
+    large: 5000000000,             // Detected as long (auto-converted)
+    huge: "99999999999999999999"   // String (would need explicit BigInteger)
+};
+```
+
+**Note:** When decoding, numbers > 2,147,483,647 are automatically returned as Long objects. Numbers > 9,223,372,036,854,775,807 are returned as BigInteger objects.
+

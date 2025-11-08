@@ -2,17 +2,17 @@
  * TOON (Token-Oriented Object Notation) Converter for ColdFusion 2016+
  *
  * Converts between JSON/ColdFusion structs and TOON format
- * Based on TOON specification v1.4
+ * Based on TOON specification v1.4  https://github.com/toon-format/toon
  *
- * @author ColdFusion Implementation
- * @see https://github.com/toon-format/toon
+ * @author James Moberg MyCFML.com
+ * @see https://github.com/JamoCA/toon-cfml
  */
 component output="false" {
 
     /**
-     * Encode ColdFusion data to TOON format
+     * Encode ColdFusion data or JSON string to TOON format
      *
-     * @param value Any ColdFusion value (struct, array, string, number, boolean, null)
+     * @param value Any ColdFusion value (struct, array, string, number, boolean, null) or JSON string
      * @param options Struct with optional settings: indent (default 2), delimiter (default ","), lengthMarker (default false - use "#" to enable)
      * @return String TOON-formatted output
      */
@@ -21,7 +21,19 @@ component output="false" {
         variables.delimiter = structKeyExists(arguments.options, "delimiter") ? arguments.options.delimiter : ",";
         variables.lengthMarker = structKeyExists(arguments.options, "lengthMarker") ? arguments.options.lengthMarker : false;
 
-        var result = encodeValue(arguments.value, 0);
+        var dataToEncode = arguments.value;
+
+        // If input is a JSON string, deserialize it first
+        if (isSimpleValue(arguments.value) && isJSON(arguments.value)) {
+            try {
+                dataToEncode = deserializeJSON(arguments.value);
+            } catch (any e) {
+                // If deserialization fails, treat as regular string
+                dataToEncode = arguments.value;
+            }
+        }
+
+        var result = encodeValue(dataToEncode, 0);
 
         // Clean up variables
         structDelete(variables, "indent");
@@ -92,7 +104,7 @@ component output="false" {
         arraySort(keys, "text");
 
         for (var key in keys) {
-            var value = arguments.data[key];
+            var value = structkeyexists(arguments.data, key) ? arguments.data[key] : javacast("null", "");
             var encodedKey = encodeKey(key);
             var indentStr = repeatString(" ", arguments.depth * variables.indent);
 
@@ -314,10 +326,27 @@ component output="false" {
         // Ensure finite number
         if (!isValid("numeric", arguments.value)) return "null";
 
+        var stringValue = toString(arguments.value);
+
+        // Check if this is a large integer (beyond int32 range: -2147483648 to 2147483647)
+        // For large integers, just return the string representation without formatting
+        if (reFind("^-?\d+$", stringValue)) {
+            // It's a whole number (no decimal point)
+            var absValue = abs(arguments.value);
+
+            // If it exceeds int32 max (2147483647), return as-is
+            if (absValue > 2147483647) {
+                return stringValue;
+            }
+
+            // For regular integers, return without decimal
+            return toString(int(arguments.value));
+        }
+
         var numValue = arguments.value;
 
-        // If it's a whole number, return as integer (no decimal point)
-        if (numValue == int(numValue)) {
+        // If it's a whole number (within int range), return as integer
+        if (numValue == int(numValue) && abs(numValue) <= 2147483647) {
             return toString(int(numValue));
         }
 
@@ -373,6 +402,7 @@ component output="false" {
             if (findNoCase("Boolean", className)) {
                 return "boolean";
             }
+            // Support all numeric types including Long and BigInteger for large numbers
             if (findNoCase("Integer", className) || findNoCase("Long", className) ||
                 findNoCase("Short", className) || findNoCase("Byte", className) ||
                 findNoCase("BigInteger", className)) {
@@ -980,12 +1010,30 @@ component output="false" {
         // Pattern: optional minus, digits, optional decimal and more digits
         if (reFind("^-?\d+\.?\d*$", trimmed) || reFind("^-?\d*\.\d+$", trimmed)) {
             // It's definitely a number (not "yes", "no", "true", "false")
-            var numValue = val(trimmed);
 
-            // Return integer if no decimal part, otherwise return as double
-            if (numValue == int(numValue)) {
-                return javacast("int", int(numValue));
+            // Check if it's a whole number or decimal
+            if (reFind("^-?\d+$", trimmed)) {
+                // Whole number - check if it exceeds int32 range
+                var numValue = val(trimmed);
+                var absValue = abs(numValue);
+
+                // ColdFusion int() max is 2147483647 (int32)
+                // For larger values, use long
+                if (absValue > 2147483647) {
+                    // Large integer - use long (int64) which supports up to 9223372036854775807
+                    try {
+                        return createObject("java", "java.lang.Long").valueOf(trimmed);
+                    } catch (any e) {
+                        // If it exceeds long range, return as BigInteger
+                        return createObject("java", "java.math.BigInteger").init(trimmed);
+                    }
+                } else {
+                    // Regular integer
+                    return javacast("int", int(numValue));
+                }
             } else {
+                // Decimal number
+                var numValue = val(trimmed);
                 return javacast("double", numValue);
             }
         }

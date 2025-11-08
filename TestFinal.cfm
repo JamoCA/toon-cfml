@@ -30,20 +30,20 @@ complexData = [
 try {
     writeOutput("<h2>Original Data</h2>");
     originalJSON = serializeJSON(complexData);
-    writeOutput("<pre>" & htmlEditFormat(originalJSON) & "</pre>");
+    writeOutput("<pre>" & encodeforhtml(originalJSON) & "</pre>");
 
     writeOutput("<h2>Step 1: Encode</h2>");
     encoded = toon.encode(complexData);
-    writeOutput("<pre>" & htmlEditFormat(encoded) & "</pre>");
+    writeOutput("<pre>" & encodeforhtml(encoded) & "</pre>");
 
     writeOutput("<h2>Step 2: Decode</h2>");
     decoded = toon.decode(encoded);
     decodedJSON = serializeJSON(decoded);
-    writeOutput("<pre>" & htmlEditFormat(decodedJSON) & "</pre>");
+    writeOutput("<pre>" & encodeforhtml(decodedJSON) & "</pre>");
 
     writeOutput("<h2>Step 3: Re-encode</h2>");
     reEncoded = toon.encode(decoded);
-    writeOutput("<pre>" & htmlEditFormat(reEncoded) & "</pre>");
+    writeOutput("<pre>" & encodeforhtml(reEncoded) & "</pre>");
 
     writeOutput("<hr>");
 
@@ -73,8 +73,8 @@ try {
             style = line1 != line2 ? " style='background-color: ##ffcccc;'" : "";
             writeOutput("<tr" & style & ">");
             writeOutput("<td>" & i & "</td>");
-            writeOutput("<td>" & htmlEditFormat(line1) & "</td>");
-            writeOutput("<td>" & htmlEditFormat(line2) & "</td>");
+            writeOutput("<td>" & encodeforhtml(line1) & "</td>");
+            writeOutput("<td>" & encodeforhtml(line2) & "</td>");
             writeOutput("</tr>");
         }
         writeOutput("</table>");
@@ -82,8 +82,8 @@ try {
 
     if (!jsonMatch) {
         writeOutput("<h3 style='color: red;'>JSON Mismatch Details:</h3>");
-        writeOutput("<p><strong>Original:</strong> " & htmlEditFormat(originalJSON) & "</p>");
-        writeOutput("<p><strong>Decoded:</strong> " & htmlEditFormat(decodedJSON) & "</p>");
+        writeOutput("<p><strong>Original:</strong> " & encodeforhtml(originalJSON) & "</p>");
+        writeOutput("<p><strong>Decoded:</strong> " & encodeforhtml(decodedJSON) & "</p>");
     }
 
     // Detailed field type checks

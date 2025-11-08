@@ -21,21 +21,21 @@ function testValue(label, value, expectedType) {
         // Original
         originalJSON = serializeJSON(data);
 		originalType = getMetadata(value).getName() == "java.lang.String" ? "string" : isBoolean(value) && !isNumeric(value) ? "boolean" : "number";
-        writeOutput("<tr><td>Original</td><td><code>" & htmlEditFormat(toString(value)) & "</code></td><td>" & originalType & "</td></tr>");
+        writeOutput("<tr><td>Original</td><td><code>" & encodeforhtml(toString(value)) & "</code></td><td>" & originalType & "</td></tr>");
 
         // Encode
         encoded = toon.encode(data);
-        writeOutput("<tr><td>TOON Encoded</td><td colspan='2'><pre>" & htmlEditFormat(encoded) & "</pre></td></tr>");
+        writeOutput("<tr><td>TOON Encoded</td><td colspan='2'><pre>" & encodeforhtml(encoded) & "</pre></td></tr>");
 
         // Decode
         decoded = toon.decode(encoded);
         decodedValue = decoded.test;
 		decodedType = getMetadata(decodedValue).getName() == "java.lang.String" ? "string" : isBoolean(decodedValue) && !isNumeric(decodedValue) ? "boolean" : "number";
-        writeOutput("<tr><td>Decoded</td><td><code>" & htmlEditFormat(toString(decodedValue)) & "</code></td><td>" & decodedType & "</td></tr>");
+        writeOutput("<tr><td>Decoded</td><td><code>" & encodeforhtml(toString(decodedValue)) & "</code></td><td>" & decodedType & "</td></tr>");
 
         // Re-encode
         reEncoded = toon.encode(decoded);
-        writeOutput("<tr><td>Re-encoded</td><td colspan='2'><pre>" & htmlEditFormat(reEncoded) & "</pre></td></tr>");
+        writeOutput("<tr><td>Re-encoded</td><td colspan='2'><pre>" & encodeforhtml(reEncoded) & "</pre></td></tr>");
 
         writeOutput("</table>");
 

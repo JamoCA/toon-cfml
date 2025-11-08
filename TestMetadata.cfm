@@ -13,7 +13,7 @@ function testMetadata(label, value) {
     writeOutput("<tr><th>Property</th><th>Value</th></tr>");
 
     // toString
-    writeOutput("<tr><td>toString(value)</td><td><code>" & htmlEditFormat(toString(value)) & "</code></td></tr>");
+    writeOutput("<tr><td>toString(value)</td><td><code>" & encodeforhtml(toString(value)) & "</code></td></tr>");
 
     // isBoolean
     writeOutput("<tr><td>isBoolean(value)</td><td>" & (isBoolean(value) ? "true" : "false") & "</td></tr>");
@@ -30,15 +30,15 @@ function testMetadata(label, value) {
         if (isStruct(meta)) {
             writeOutput("<tr><td>getMetadata(value)</td><td><strong>Struct:</strong><br>");
             for (key in meta) {
-                writeOutput(key & ": " & htmlEditFormat(toString(meta[key])) & "<br>");
+                writeOutput(key & ": " & encodeforhtml(toString(meta[key])) & "<br>");
             }
             writeOutput("</td></tr>");
 
             if (structKeyExists(meta, "name")) {
-                writeOutput("<tr><td><strong>meta.name</strong></td><td><code>" & htmlEditFormat(meta.name) & "</code></td></tr>");
+                writeOutput("<tr><td><strong>meta.name</strong></td><td><code>" & encodeforhtml(meta.name) & "</code></td></tr>");
             }
         } else {
-            writeOutput("<tr><td>getMetadata(value)</td><td><code>" & htmlEditFormat(toString(meta)) & "</code></td></tr>");
+            writeOutput("<tr><td>getMetadata(value)</td><td><code>" & encodeforhtml(toString(meta)) & "</code></td></tr>");
         }
     } catch (any e) {
         writeOutput("<tr><td>getMetadata(value)</td><td style='color: red;'>ERROR: " & e.message & "</td></tr>");
@@ -47,7 +47,7 @@ function testMetadata(label, value) {
     // Java class via getClass()
     try {
         javaClass = value.getClass().getName();
-        writeOutput("<tr><td><strong>value.getClass().getName()</strong></td><td><code>" & htmlEditFormat(javaClass) & "</code></td></tr>");
+        writeOutput("<tr><td><strong>value.getClass().getName()</strong></td><td><code>" & encodeforhtml(javaClass) & "</code></td></tr>");
     } catch (any e) {
         writeOutput("<tr><td>value.getClass().getName()</td><td style='color: red;'>ERROR: " & e.message & "</td></tr>");
     }
