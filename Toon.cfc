@@ -6,6 +6,7 @@
  *
  * @author James Moberg MyCFML.com
  * @see https://github.com/JamoCA/toon-cfml
+ * Updated 11/29/2025 20:34 Pacific - Tested in CF2016-2025 & Lucee 6
  */
 component output="false" {
 
@@ -22,7 +23,6 @@ component output="false" {
         variables.lengthMarker = structKeyExists(arguments.options, "lengthMarker") ? arguments.options.lengthMarker : false;
 
         var dataToEncode = arguments.value;
-
         // If input is a JSON string, deserialize it first
         if (isSimpleValue(arguments.value) && isJSON(arguments.value)) {
             try {
@@ -177,7 +177,7 @@ component output="false" {
             arrayAppend(encodedFields, encodeKey(field));
         }
 
-        var header = "[" & lengthPrefix & length & delimiterSuffix & "]{" & arrayToList(encodedFields, variables.delimiter == chr(9) ? " " : variables.delimiter) & "}:";
+        var header = "[" & lengthPrefix & length & delimiterSuffix & "]{" & arrayToList(encodedFields, variables.delimiter) & "}:";
         var lines = [header];
         var indentStr = repeatString(" ", arguments.depth * variables.indent);
 
@@ -326,7 +326,14 @@ component output="false" {
         // Ensure finite number
         if (!isValid("numeric", arguments.value)) return "null";
 
-        var stringValue = toString(arguments.value);
+		var stringValue = toString(arguments.value);
+
+		var dataType = getMetadata(arguments.value).getName();
+		if (find("BigInteger", dataType)){
+			var stringValue = arguments.value.toString();
+		}
+
+		// cf_dump(var=stringValue);
 
         // Check if this is a large integer (beyond int32 range: -2147483648 to 2147483647)
         // For large integers, just return the string representation without formatting
@@ -364,7 +371,7 @@ component output="false" {
 
     private string function getDelimiterSuffix() {
         if (variables.delimiter == chr(9)) {
-            return " ";  // Tab delimiter shows as space in header
+            return chr(9);  // Tab delimiter uses tab in suffix
         } else if (variables.delimiter == "|") {
             return "|";
         }
@@ -570,8 +577,8 @@ component output="false" {
             var keyPart = trim(left(line, colonPos - 1));
             var valuePart = trim(mid(line, colonPos + 1, len(line)));
 
-            // Check if keyPart contains array notation (e.g., "records[2]" or "tags[3]")
-            var arrayMatch = reFind("^(.+?)\[(##)?(\d+)([^\]]*)\]$", keyPart, 1, true);
+            // Check if keyPart contains array notation (e.g., "records[2]" or "tags[3]" or "users[2]{balance,id,name}")
+            var arrayMatch = reFind("^(.+?)\[(##)?(\d+)([^\]]*)\]", keyPart, 1, true);
 
             if (arrayMatch.pos[1] > 0 && len(valuePart) == 0) {
                 // Key has array notation and no value on same line
@@ -584,9 +591,21 @@ component output="false" {
 
                 // Determine delimiter from the array notation
                 var arrayDelimiter = ",";
-                if (arrayMatch.len[5] > 0) {
+                
+                // First check if there's a field definition {fields} for tabular arrays
+                var fieldsCheck = reFind("\{([^}]+)\}", keyPart, 1, true);
+                if (fieldsCheck.pos[1] > 0) {
+                    // Tabular array - check delimiter in field definition
+                    var fieldsContent = mid(keyPart, fieldsCheck.pos[2], fieldsCheck.len[2]);
+                    if (find(chr(9), fieldsContent) > 0) {
+                        arrayDelimiter = chr(9);  // Tab
+                    } else if (find("|", fieldsContent) > 0) {
+                        arrayDelimiter = "|";  // Pipe
+                    }
+                } else if (arrayMatch.len[5] > 0) {
+                    // Primitive array - check suffix marker
                     var delimiterPart = mid(keyPart, arrayMatch.pos[5], arrayMatch.len[5]);
-                    if (find(" ", delimiterPart) > 0) {
+                    if (find(chr(9), delimiterPart) > 0) {
                         arrayDelimiter = chr(9);  // Tab
                     } else if (find("|", delimiterPart) > 0) {
                         arrayDelimiter = "|";
@@ -596,7 +615,7 @@ component output="false" {
                 variables.currentLine++;
 
                 // Check if next line has field definition for tabular array
-                var peekLine = variables.currentLine <= arrayLen(variables.lines) ? trim(variables.lines[variables.currentLine + 1]) : "";
+                var peekLine = variables.currentLine < arrayLen(variables.lines) ? trim(variables.lines[variables.currentLine + 1]) : "";
 
                 // Check if this is a tabular array (has {fields})
                 var fieldsMatch = reFind("\{([^}]+)\}", keyPart, 1, true);
@@ -622,7 +641,7 @@ component output="false" {
                 var key = keyPart;
 
                 // Check if this is an inline array like "tags[3]: a,b,c"
-                var inlineArrayMatch = reFind("^(.+?)\[(##)?(\d+)([^\]]*)\]$", keyPart, 1, true);
+                var inlineArrayMatch = reFind("^(.+?)\[(##)?(\d+)([^\]]*)\]", keyPart, 1, true);
 
                 if (inlineArrayMatch.pos[1] > 0 && len(valuePart) > 0) {
                     // This is an inline array
@@ -632,7 +651,7 @@ component output="false" {
                     var arrayDelimiter = ",";
                     if (inlineArrayMatch.len[5] > 0) {
                         var delimiterPart = mid(keyPart, inlineArrayMatch.pos[5], inlineArrayMatch.len[5]);
-                        if (find(" ", delimiterPart) > 0) {
+                        if (find(chr(9), delimiterPart) > 0) {
                             arrayDelimiter = chr(9);
                         } else if (find("|", delimiterPart) > 0) {
                             arrayDelimiter = "|";
@@ -724,7 +743,7 @@ component output="false" {
                     var arrayDelimiter = ",";
                     if (arrayMatch.len[5] > 0) {
                         var delimiterPart = mid(firstKey, arrayMatch.pos[5], arrayMatch.len[5]);
-                        if (find(" ", delimiterPart) > 0) {
+                        if (find(chr(9), delimiterPart) > 0) {
                             arrayDelimiter = chr(9);
                         } else if (find("|", delimiterPart) > 0) {
                             arrayDelimiter = "|";
@@ -777,7 +796,7 @@ component output="false" {
                 var arrayDelimiter = ",";
                 if (arrayMatch.len[5] > 0) {
                     var delimiterPart = mid(keyPart, arrayMatch.pos[5], arrayMatch.len[5]);
-                    if (find(" ", delimiterPart) > 0) {
+                    if (find(chr(9), delimiterPart) > 0) {
                         arrayDelimiter = chr(9);
                     } else if (find("|", delimiterPart) > 0) {
                         arrayDelimiter = "|";
@@ -805,8 +824,7 @@ component output="false" {
         // Extract field names from header
         var fieldsMatch = reFind("\{([^}]+)\}", arguments.header, 1, true);
         var fieldsStr = mid(arguments.header, fieldsMatch.pos[2], fieldsMatch.len[2]);
-        var fieldDelimiter = arguments.delimiter == chr(9) ? " " : arguments.delimiter;
-        var fields = listToArray(fieldsStr, fieldDelimiter);
+        var fields = listToArray(fieldsStr, arguments.delimiter);
 
         var result = [];
 
@@ -854,11 +872,16 @@ component output="false" {
 
         var length = val(mid(trimmedLine, headerMatch.pos[2], headerMatch.len[2]));
 
+        // Handle empty array
+        if (length == 0) {
+            return [];
+        }
+
         // Determine delimiter from header
         var arrayDelimiter = ",";
         if (headerMatch.len[3] > 0) {
             var delimiterPart = mid(trimmedLine, headerMatch.pos[3], headerMatch.len[3]);
-            if (find(" ", delimiterPart) > 0) {
+            if (find(chr(9), delimiterPart) > 0) {
                 arrayDelimiter = chr(9);  // Tab
             } else if (find("|", delimiterPart) > 0) {
                 arrayDelimiter = "|";
@@ -899,8 +922,7 @@ component output="false" {
         // Extract field names
         var fieldsMatch = reFind("\{([^}]+)\}", arguments.header, 1, true);
         var fieldsStr = mid(arguments.header, fieldsMatch.pos[2], fieldsMatch.len[2]);
-        var fieldDelimiter = arguments.delimiter == chr(9) ? " " : arguments.delimiter;
-        var fields = listToArray(fieldsStr, fieldDelimiter);
+        var fields = listToArray(fieldsStr, arguments.delimiter);
 
         var result = [];
 
